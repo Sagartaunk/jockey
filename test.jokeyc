@@ -1,0 +1,5 @@
+let base = 100;
+let multiplier = 5;
+let result = base + multiplier;
+print("Obfuscation activated");
+print(result);
