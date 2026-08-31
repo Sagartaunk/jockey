@@ -39,6 +39,8 @@ impl LinearCodeGen {
                 .expect("LinearCodeGen Error: Undefined variable referenced")
                 .clone(),
             Expr::Add(l, r) => format!("{} + {}", self.gen_expr(l), self.gen_expr(r)),
+            Expr::Sub(l, r) => format!("{} - {}", self.gen_expr(l), self.gen_expr(r)),
+            Expr::Multiply(l, r) => format!("{} * {}", self.gen_expr(l), self.gen_expr(r)),
             Expr::Str(_) => {
                 panic!("LinearCodeGen Error: Strings must be handled at the statement level")
             }

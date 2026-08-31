@@ -13,6 +13,8 @@ pub enum Token {
     Str(String),
     Equals,
     Plus,
+    Minus,
+    Multiply,
     Semicolon,
     LParen,
     RParen,
@@ -70,6 +72,14 @@ impl<'a> Lexer<'a> {
                     }
                     self.chars.next(); // consume closing quote
                     tokens.push(Token::Str(s));
+                }
+                '-' => {
+                    self.chars.next();
+                    tokens.push(Token::Minus);
+                }
+                '*' => {
+                    self.chars.next();
+                    tokens.push(Token::Multiply);
                 }
                 _ if c.is_ascii_alphabetic() => {
                     let mut s = String::new();

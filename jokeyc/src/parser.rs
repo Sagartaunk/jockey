@@ -64,6 +64,16 @@ impl Parser {
             let right = self.parse_term();
             left = Expr::Add(Box::new(left), Box::new(right));
         }
+        while *self.peek() == Token::Minus {
+            self.consume(); // consume '-'
+            let right = self.parse_term();
+            left = Expr::Sub(Box::new(left), Box::new(right));
+        }
+        while *self.peek() == Token::Multiply {
+            self.consume(); // consume '*'
+            let right = self.parse_term();
+            left = Expr::Multiply(Box::new(left), Box::new(right));
+        }
         left
     }
 

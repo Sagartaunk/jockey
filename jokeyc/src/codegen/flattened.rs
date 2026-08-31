@@ -29,6 +29,8 @@ impl FlattenedCodeGen {
             Expr::Int(i) => i.to_string(),
             Expr::Ident(name) => self.sym_table.get(name).unwrap().clone(),
             Expr::Add(l, r) => format!("{} + {}", self.gen_expr(l), self.gen_expr(r)),
+            Expr::Sub(l, r) => format!("{} - {}", self.gen_expr(l), self.gen_expr(r)),
+            Expr::Multiply(l, r) => format!("{} * {}", self.gen_expr(l), self.gen_expr(r)),
             Expr::Str(_) => panic!("Strings must be handled at the statement level for encryption"),
         }
     }

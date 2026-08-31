@@ -1,5 +1,10 @@
-let base = 100;
-let multiplier = 5;
-let result = base + multiplier;
-print("Obfuscation activated");
-print(result);
+let something = 20;
+let anotherthing = 30;
+let theanswer = something + anotherthing;
+let anotheranotherthing = 120;
+let somethingelse = something - anotherthing;
+let anotherelse = something * theanswer;
+print("the_answer");
+print(somethingelse);
+print(anotherelse);
+print("This is how the obfuscator works ig. This is a string that will not look like this anymore when this is done hehe.");

@@ -11,6 +11,10 @@ pub enum Expr {
     Ident(String),
     /// An addition operation (e.g., `x + 5`)
     Add(Box<Expr>, Box<Expr>),
+    /// A subtraction operation (e.g., `x - 5`)
+    Sub(Box<Expr>, Box<Expr>),
+    /// A multiplication operation (e.g, `x * 5)
+    Multiply(Box<Expr>, Box<Expr>),
 }
 
 /// Represents a single executable statement.
