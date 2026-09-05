@@ -8,20 +8,25 @@ use std::str::Chars;
 pub enum Token {
     Let,
     Print,
+    If,
+    Else,
+    While,
     Ident(String),
     Int(i32),
     Str(String),
     Equals,
+    EqEq,
+    Less,
+    Greater,
     Plus,
-    Minus,
-    Multiply,
     Semicolon,
     LParen,
     RParen,
+    LBrace,
+    RBrace,
     Eof,
 }
 
-/// Consumes a raw source string and emits a stream of tokens.
 pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
 }
@@ -33,17 +38,12 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// Scans the entire input and returns a vector of tokens.
     pub fn tokenize(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
         while let Some(&c) = self.chars.peek() {
             match c {
                 ' ' | '\n' | '\r' | '\t' => {
                     self.chars.next();
-                }
-                '=' => {
-                    self.chars.next();
-                    tokens.push(Token::Equals);
                 }
                 '+' => {
                     self.chars.next();
@@ -61,8 +61,33 @@ impl<'a> Lexer<'a> {
                     self.chars.next();
                     tokens.push(Token::RParen);
                 }
+                '{' => {
+                    self.chars.next();
+                    tokens.push(Token::LBrace);
+                }
+                '}' => {
+                    self.chars.next();
+                    tokens.push(Token::RBrace);
+                }
+                '<' => {
+                    self.chars.next();
+                    tokens.push(Token::Less);
+                }
+                '>' => {
+                    self.chars.next();
+                    tokens.push(Token::Greater);
+                }
+                '=' => {
+                    self.chars.next();
+                    if self.chars.peek() == Some(&'=') {
+                        self.chars.next();
+                        tokens.push(Token::EqEq);
+                    } else {
+                        tokens.push(Token::Equals);
+                    }
+                }
                 '"' => {
-                    self.chars.next(); // consume opening quote
+                    self.chars.next();
                     let mut s = String::new();
                     while let Some(&ch) = self.chars.peek() {
                         if ch == '"' {
@@ -70,21 +95,13 @@ impl<'a> Lexer<'a> {
                         }
                         s.push(self.chars.next().unwrap());
                     }
-                    self.chars.next(); // consume closing quote
+                    self.chars.next();
                     tokens.push(Token::Str(s));
-                }
-                '-' => {
-                    self.chars.next();
-                    tokens.push(Token::Minus);
-                }
-                '*' => {
-                    self.chars.next();
-                    tokens.push(Token::Multiply);
                 }
                 _ if c.is_ascii_alphabetic() => {
                     let mut s = String::new();
                     while let Some(&ch) = self.chars.peek() {
-                        if ch.is_ascii_alphanumeric() {
+                        if ch.is_ascii_alphanumeric() || ch == '_' {
                             s.push(self.chars.next().unwrap());
                         } else {
                             break;
@@ -93,6 +110,9 @@ impl<'a> Lexer<'a> {
                     match s.as_str() {
                         "let" => tokens.push(Token::Let),
                         "print" => tokens.push(Token::Print),
+                        "if" => tokens.push(Token::If),
+                        "else" => tokens.push(Token::Else),
+                        "while" => tokens.push(Token::While),
                         _ => tokens.push(Token::Ident(s)),
                     }
                 }
@@ -107,7 +127,7 @@ impl<'a> Lexer<'a> {
                     }
                     tokens.push(Token::Int(s.parse().unwrap()));
                 }
-                _ => panic!("Lexer Error: Unexpected character '{}'", c),
+                _ => panic!("Unexpected char: {}", c),
             }
         }
         tokens.push(Token::Eof);

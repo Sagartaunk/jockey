@@ -13,18 +13,15 @@ impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Parser { tokens, pos: 0 }
     }
-
-    fn peek(&self) -> &Token {
+    pub fn peek(&self) -> &Token {
         &self.tokens[self.pos]
     }
-
-    fn consume(&mut self) -> Token {
+    pub fn consume(&mut self) -> Token {
         let t = self.tokens[self.pos].clone();
         self.pos += 1;
         t
     }
 
-    /// Parses the entire token stream into a sequence of statements.
     pub fn parse(&mut self) -> Vec<Stmt> {
         let mut stmts = Vec::new();
         while *self.peek() != Token::Eof {
@@ -33,56 +30,110 @@ impl Parser {
         stmts
     }
 
-    fn parse_stmt(&mut self) -> Stmt {
+    pub fn parse_stmt(&mut self) -> Stmt {
         match self.peek() {
             Token::Let => {
-                self.consume(); // consume 'let'
+                self.consume();
                 let Token::Ident(name) = self.consume() else {
                     panic!("Expected identifier")
                 };
-                assert_eq!(self.consume(), Token::Equals, "Expected '='");
+                assert_eq!(self.consume(), Token::Equals);
                 let expr = self.parse_expr();
-                assert_eq!(self.consume(), Token::Semicolon, "Expected ';'");
+                assert_eq!(self.consume(), Token::Semicolon);
                 Stmt::Let(name, expr)
             }
-            Token::Print => {
-                self.consume(); // consume 'print'
-                assert_eq!(self.consume(), Token::LParen, "Expected '('");
+            Token::Ident(name) => {
+                let name = name.clone();
+                self.consume();
+                assert_eq!(self.consume(), Token::Equals, "Expected '=' for assignment");
                 let expr = self.parse_expr();
-                assert_eq!(self.consume(), Token::RParen, "Expected ')'");
-                assert_eq!(self.consume(), Token::Semicolon, "Expected ';'");
+                assert_eq!(self.consume(), Token::Semicolon);
+                Stmt::Assign(name, expr)
+            }
+            Token::Print => {
+                self.consume();
+                assert_eq!(self.consume(), Token::LParen);
+                let expr = self.parse_expr();
+                assert_eq!(self.consume(), Token::RParen);
+                assert_eq!(self.consume(), Token::Semicolon);
                 Stmt::Print(expr)
             }
-            _ => panic!("Parser Error: Unexpected token {:?}", self.peek()),
+            Token::If => {
+                self.consume();
+                let cond = self.parse_expr();
+                let then_branch = self.parse_block();
+                let mut else_branch = None;
+                if *self.peek() == Token::Else {
+                    self.consume();
+                    if *self.peek() == Token::If {
+                        // Handle `else if` chaining
+                        else_branch = Some(Box::new(self.parse_stmt()));
+                    } else {
+                        else_branch = Some(Box::new(self.parse_block()));
+                    }
+                }
+                Stmt::If(cond, Box::new(then_branch), else_branch)
+            }
+            Token::While => {
+                self.consume();
+                let cond = self.parse_expr();
+                let body = self.parse_block();
+                Stmt::While(cond, Box::new(body))
+            }
+            Token::LBrace => self.parse_block(),
+            t => panic!("Unexpected token at stmt start: {:?}", t),
         }
     }
 
-    fn parse_expr(&mut self) -> Expr {
+    pub fn parse_block(&mut self) -> Stmt {
+        assert_eq!(self.consume(), Token::LBrace);
+        let mut stmts = Vec::new();
+        while *self.peek() != Token::RBrace {
+            stmts.push(self.parse_stmt());
+        }
+        self.consume();
+        Stmt::Block(stmts)
+    }
+
+    // Comparison precedence (==, <, >)
+    pub fn parse_expr(&mut self) -> Expr {
         let mut left = self.parse_term();
-        while *self.peek() == Token::Plus {
-            self.consume(); // consume '+'
-            let right = self.parse_term();
-            left = Expr::Add(Box::new(left), Box::new(right));
-        }
-        while *self.peek() == Token::Minus {
-            self.consume(); // consume '-'
-            let right = self.parse_term();
-            left = Expr::Sub(Box::new(left), Box::new(right));
-        }
-        while *self.peek() == Token::Multiply {
-            self.consume(); // consume '*'
-            let right = self.parse_term();
-            left = Expr::Multiply(Box::new(left), Box::new(right));
+        loop {
+            match self.peek() {
+                Token::EqEq => {
+                    self.consume();
+                    left = Expr::Eq(Box::new(left), Box::new(self.parse_term()));
+                }
+                Token::Less => {
+                    self.consume();
+                    left = Expr::Lt(Box::new(left), Box::new(self.parse_term()));
+                }
+                Token::Greater => {
+                    self.consume();
+                    left = Expr::Gt(Box::new(left), Box::new(self.parse_term()));
+                }
+                _ => break,
+            }
         }
         left
     }
 
-    fn parse_term(&mut self) -> Expr {
+    // Math precedence (+)
+    pub fn parse_term(&mut self) -> Expr {
+        let mut left = self.parse_primary();
+        while *self.peek() == Token::Plus {
+            self.consume();
+            left = Expr::Add(Box::new(left), Box::new(self.parse_primary()));
+        }
+        left
+    }
+
+    pub fn parse_primary(&mut self) -> Expr {
         match self.consume() {
             Token::Int(i) => Expr::Int(i),
             Token::Str(s) => Expr::Str(s),
             Token::Ident(id) => Expr::Ident(id),
-            t => panic!("Parser Error: Expected term, found {:?}", t),
+            t => panic!("Expected expression, got {:?}", t),
         }
     }
 }
